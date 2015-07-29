@@ -1,0 +1,131 @@
+# -*- coding: utf-8 -*-
+from django.template import RequestContext
+from django.shortcuts import render_to_response
+from django.utils._os import safe_join
+from django.core.files.storage import default_storage
+from .forms import DocumentForm
+from django.views.static import serve
+from django.http import HttpResponse
+
+import httplib
+import time
+import base64
+import json
+import os
+
+
+def index(request):
+    # Handle file upload
+    if request.method == 'POST':
+        layer = request.POST.get('typeName', None)
+        workspace, datastore = get_layer_info(layer)
+
+        if workspace and datastore:
+            filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
+            filename_absolute = safe_join(default_storage.location, filename)
+            # if there is already and xsd file there, back it up first.
+            backup_millis = int(round(time.time() * 1000))
+            try:
+                os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
+            except OSError:
+                pass
+            file = request.FILES['docfile']
+            default_storage.save(filename, file)
+
+        response = HttpResponse('upload completed for layer: {}'.format(layer))
+        return response
+
+    layer = request.GET.get('typeName', None)
+    if layer:
+        subform = request.GET.get('subform', None)
+        if subform == 'download':
+            print '----[ download'
+            workspace, datastore = get_layer_info(layer)
+            filename = 'gsschema_prj/geoserver_data/workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
+            filename = os.path.abspath(filename)
+            if os.path.isfile(filename):
+                response = serve(request, os.path.basename(filename), os.path.dirname(filename))
+                response['Content-Disposition'] = 'attachment; filename="{}.xsd"'.format(layer)
+                return response
+
+            response = HttpResponse('no schema file previously uploaded for layer: {}'.format(layer))
+            return response
+
+        elif subform == 'describe':
+            print '----[ describe'
+            res = describe_layer(layer)
+            response = HttpResponse(res, content_type='application/xml')
+            response['Content-Disposition'] = 'attachment; filename="{}_describe.xsd"'.format(layer)
+            return response
+
+    # An empty, unbound form
+    form = DocumentForm()
+
+    # Render list page with the documents and the form
+    return render_to_response(
+        'gsschema/index.html',
+        {
+            'form': form,
+            'layers': get_layers()
+        },
+        context_instance=RequestContext(request)
+    )
+
+
+def get_layers():
+    username = 'admin'
+    password = 'admin'
+    auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
+    headers = {"Authorization": "Basic {}".format(auth)}
+
+    conn = httplib.HTTPConnection('192.168.99.99')
+    conn.request("GET", "/geoserver/rest/layers.json", None, headers)
+    conn.set_debuglevel(1)
+    r1 = conn.getresponse()
+    print r1.status, r1.reason
+
+    layers = []
+    resp_obj = json.loads(r1.read())
+    if resp_obj and resp_obj.get('layers', None):
+        for layer in resp_obj['layers'].get('layer', None):
+            print layer.get('name', '{ No Name }')
+            layers.append(layer.get('name', '{ No Name }'))
+    return layers
+
+
+def get_layer_info(layer):
+    workspace = None
+    datastore = None
+
+    username = 'admin'
+    password = 'admin'
+    auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
+    headers = {"Authorization": "Basic {}".format(auth)}
+
+    conn = httplib.HTTPConnection('192.168.99.99')
+    conn.request("GET", "/geoserver/rest/layers/{}.json".format(layer), None, headers)
+    r1 = conn.getresponse()
+    print r1.status, r1.reason
+
+    resp_obj = json.loads(r1.read())
+    href_path = 'layer.resource.href'
+    href = reduce(dict.get, href_path.split('.'), resp_obj)
+    if href:
+        tokes = href.split('/')
+        if len(tokes) == 11:
+            workspace = tokes[6]
+            datastore = tokes[8]
+
+    return workspace, datastore
+
+
+def describe_layer(layer):
+    username = 'admin'
+    password = 'admin'
+    auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
+    headers = {"Authorization": "Basic {}".format(auth)}
+    conn = httplib.HTTPConnection('192.168.99.99')
+    conn.request("GET", "/geoserver/wfs?version=1.1.0&request=DescribeFeatureType&typeName={}".format(layer), None, headers)
+    r1 = conn.getresponse()
+    print r1.status, r1.reason
+    return r1.read()

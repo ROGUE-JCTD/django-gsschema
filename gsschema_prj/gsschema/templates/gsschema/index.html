@@ -1,0 +1,37 @@
+<form action="{% url "index" %}" method="GET">
+    <input type='hidden' id='subform' name="subform" value='describe' />
+    <select id='typeName' name='typeName'>
+    {% for layer in layers %}
+        <option value="{{ layer }}">{{ layer }}</option>
+    {% endfor %}
+    </select>
+    <input type='submit' value='Describe' />
+</form>
+
+<form action="{% url "index" %}" method="GET">
+    {% csrf_token %}
+    <input type='hidden' id='subform' name="subform" value='download' />
+    <select id='typeName' name='typeName'>
+    {% for layer in layers %}
+        <option value="{{ layer }}">{{ layer }}</option>
+    {% endfor %}
+    </select>
+    <input type="submit" value="Download" />
+</form>
+
+<!-- Upload form. Note enctype attribute! -->
+<form action="{% url "index" %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p>{{ form.non_field_errors }}</p>
+    <p>{{ form.docfile.label_tag }} {{ form.docfile.help_text }}</p>
+        {{ form.docfile.errors }}
+        {{ form.docfile }}
+    <br/>
+    <input type='hidden' id='subform' name="subform" value='upload' />
+    <select id='typeName' name='typeName'>
+    {% for layer in layers %}
+        <option value="{{ layer }}">{{ layer }}</option>
+    {% endfor %}
+    </select>
+    <input type="submit" value="Upload" />
+</form>
