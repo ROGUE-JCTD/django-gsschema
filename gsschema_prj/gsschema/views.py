@@ -6,6 +6,7 @@ from django.core.files.storage import default_storage
 from .forms import DocumentForm
 from django.views.static import serve
 from django.http import HttpResponse
+from django.conf import settings
 
 import httplib
 import time
@@ -22,7 +23,7 @@ def index(request):
 
         if workspace and datastore:
             filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
-            filename_absolute = safe_join(default_storage.location, filename)
+            filename_absolute = safe_join(settings.OGC_SERVER['default']['GEOSERVER_DATA_DIR'], filename)
             # if there is already and xsd file there, back it up first.
             backup_millis = int(round(time.time() * 1000))
             try:
@@ -41,7 +42,7 @@ def index(request):
         if subform == 'download':
             print '----[ download'
             workspace, datastore = get_layer_info(layer)
-            filename = 'gsschema_prj/geoserver_data/workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
+            filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(settings.OGC_SERVER['default']['GEOSERVER_DATA_DIR'], workspace, datastore, layer)
             filename = os.path.abspath(filename)
             if os.path.isfile(filename):
                 response = serve(request, os.path.basename(filename), os.path.dirname(filename))
@@ -59,13 +60,13 @@ def index(request):
             return response
 
     # An empty, unbound form
-    form = DocumentForm()
+    file_upload_form = DocumentForm()
 
     # Render list page with the documents and the form
     return render_to_response(
         'gsschema/index.html',
         {
-            'form': form,
+            'file_upload_form': file_upload_form,
             'layers': get_layers()
         },
         context_instance=RequestContext(request)
@@ -73,12 +74,11 @@ def index(request):
 
 
 def get_layers():
-    username = 'admin'
-    password = 'admin'
+    username = settings.OGC_SERVER['default']['USER']
+    password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-
-    conn = httplib.HTTPConnection('192.168.99.99')
+    conn = get_connection(settings.SITEURL)
     conn.request("GET", "/geoserver/rest/layers.json", None, headers)
     conn.set_debuglevel(1)
     r1 = conn.getresponse()
@@ -97,12 +97,11 @@ def get_layer_info(layer):
     workspace = None
     datastore = None
 
-    username = 'admin'
-    password = 'admin'
+    username = settings.OGC_SERVER['default']['USER']
+    password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-
-    conn = httplib.HTTPConnection('192.168.99.99')
+    conn = get_connection(settings.SITEURL)
     conn.request("GET", "/geoserver/rest/layers/{}.json".format(layer), None, headers)
     r1 = conn.getresponse()
     print r1.status, r1.reason
@@ -120,12 +119,23 @@ def get_layer_info(layer):
 
 
 def describe_layer(layer):
-    username = 'admin'
-    password = 'admin'
+    username = settings.OGC_SERVER['default']['USER']
+    password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-    conn = httplib.HTTPConnection('192.168.99.99')
+    conn = get_connection(settings.SITEURL)
     conn.request("GET", "/geoserver/wfs?version=1.1.0&request=DescribeFeatureType&typeName={}".format(layer), None, headers)
     r1 = conn.getresponse()
     print r1.status, r1.reason
     return r1.read()
+
+
+def get_connection(site_url):
+    urls_tokens = site_url.split('/')
+    protocol = urls_tokens[0]
+    conn = None
+    if protocol.lower() == 'http:':
+        conn = httplib.HTTPConnection(urls_tokens[2])
+    elif protocol.lower() == 'https:':
+        conn = httplib.HTTPSConnection(urls_tokens[2])
+    return conn

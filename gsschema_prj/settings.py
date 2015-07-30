@@ -76,16 +76,24 @@ USE_L10N = True
 
 USE_TZ = True
 
+SITEURL = 'http://192.168.99.99/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 STATIC_URL = '/static/'
 
-# Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'geoserver_data')
+# OGC (WMS/WFS/WCS) Server Settings
+OGC_SERVER = {
+    'default': {
+        'LOCATION': 'http://192.168.99.99/geoserver/',
+        'PUBLIC_LOCATION': 'http://192.168.99.99/geoserver/',
+        'USER': 'admin',
+        'PASSWORD': 'geoserver',
+        'GEOSERVER_DATA_DIR': '/Users/s30244/dev/django-gsschema/gsschema_prj/geoserver_data',
+    }
+}
 
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash.
-# Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = '/geoserver_data/'
+# Absolute filesystem path to the directory that will hold user-uploaded files. Used to upload schema.xsd files
+MEDIA_ROOT = OGC_SERVER['default']['GEOSERVER_DATA_DIR']
+
+
