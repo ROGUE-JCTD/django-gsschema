@@ -1,0 +1,3 @@
+include README.md CHANGES LICENSE
+recursive-include gsschema/static
+recursive-include gsschema/templates *.html

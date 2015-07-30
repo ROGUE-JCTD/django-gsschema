@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-from django.template import RequestContext
-from django.shortcuts import render_to_response
-from django.utils._os import safe_join
-from django.core.files.storage import default_storage
-from .forms import DocumentForm
-from django.views.static import serve
-from django.http import HttpResponse
-from django.conf import settings
-
 import httplib
 import time
 import base64
 import json
 import os
+
+from django.template import RequestContext
+from django.shortcuts import render_to_response
+from django.utils._os import safe_join
+from django.core.files.storage import default_storage
+from django.views.static import serve
+from django.http import HttpResponse
+from django.conf import settings
+
+from gsschema.forms import DocumentForm
 
 
 def index(request):

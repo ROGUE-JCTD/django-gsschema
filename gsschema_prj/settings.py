@@ -36,7 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'gsschema_prj.gsschema',
+    'gsschema',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -89,7 +89,7 @@ OGC_SERVER = {
         'PUBLIC_LOCATION': 'http://192.168.99.99/geoserver/',
         'USER': 'admin',
         'PASSWORD': 'geoserver',
-        'GEOSERVER_DATA_DIR': '/Users/s30244/dev/django-gsschema/gsschema_prj/geoserver_data',
+        'GEOSERVER_DATA_DIR': '/Users/s30244/dev/django-gsschema/geoserver_data',
     }
 }
 
