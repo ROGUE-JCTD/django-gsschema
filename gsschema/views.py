@@ -12,10 +12,11 @@ from django.core.files.storage import default_storage
 from django.views.static import serve
 from django.http import HttpResponse
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 
 from gsschema.forms import DocumentForm
 
-
+@login_required
 def index(request):
     # Handle file upload
     if request.method == 'POST':

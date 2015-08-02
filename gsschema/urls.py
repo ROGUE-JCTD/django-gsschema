@@ -4,5 +4,5 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
 urlpatterns = patterns('gsschema.views',
-    url(r'^index/$', 'index', name='index'),
+    url(r'^$',  'index', name='index'),
 )
