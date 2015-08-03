@@ -18,49 +18,6 @@ from gsschema.forms import DocumentForm
 
 @login_required
 def index(request):
-    # Handle file upload
-    if request.method == 'POST':
-        layer = request.POST.get('typeName', None)
-        workspace, datastore = get_layer_info(layer)
-
-        if workspace and datastore:
-            filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
-            filename_absolute = safe_join(settings.OGC_SERVER['default']['GEOSERVER_DATA_DIR'], filename)
-            # if there is already and xsd file there, back it up first.
-            backup_millis = int(round(time.time() * 1000))
-            try:
-                os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
-            except OSError:
-                pass
-            file = request.FILES['docfile']
-            default_storage.save(filename, file)
-
-        response = HttpResponse('upload completed for layer: {}'.format(layer))
-        return response
-
-    layer = request.GET.get('typeName', None)
-    if layer:
-        subform = request.GET.get('subform', None)
-        if subform == 'download':
-            print '----[ download'
-            workspace, datastore = get_layer_info(layer)
-            filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(settings.OGC_SERVER['default']['GEOSERVER_DATA_DIR'], workspace, datastore, layer)
-            filename = os.path.abspath(filename)
-            if os.path.isfile(filename):
-                response = serve(request, os.path.basename(filename), os.path.dirname(filename))
-                response['Content-Disposition'] = 'attachment; filename="{}.xsd"'.format(layer)
-                return response
-
-            response = HttpResponse('no schema file previously uploaded for layer: {}'.format(layer))
-            return response
-
-        elif subform == 'describe':
-            print '----[ describe'
-            res = describe_layer(layer)
-            response = HttpResponse(res, content_type='application/xml')
-            response['Content-Disposition'] = 'attachment; filename="{}_describe.xsd"'.format(layer)
-            return response
-
     # An empty, unbound form
     file_upload_form = DocumentForm()
 
@@ -68,11 +25,63 @@ def index(request):
     return render_to_response(
         'gsschema/index.html',
         {
-            'file_upload_form': file_upload_form,
             'layers': get_layers()
         },
         context_instance=RequestContext(request)
     )
+
+
+@login_required
+def download(request, layer):
+    if layer:
+        workspace, datastore = get_layer_info(layer)
+        filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(settings.MEDIA_ROOT, workspace, datastore, layer)
+        filename = os.path.abspath(filename)
+        if os.path.isfile(filename):
+            response = serve(request, os.path.basename(filename), os.path.dirname(filename))
+            response['Content-Disposition'] = 'attachment; filename="{}.xsd"'.format(layer)
+            return response
+        response = HttpResponse('no schema file previously uploaded for layer: {}'.format(layer))
+    elif layer is None:
+        response = HttpResponse('typeName parameter not provided')
+    else:
+        response = HttpResponse('layer name refered to by typeName parameter not found: {}'.format(layer))
+    return response
+
+
+@login_required
+def describe(request, layer):
+    if layer:
+        print '----[ describe'
+        res = describe_layer(layer)
+        response = HttpResponse(res, content_type='application/xml')
+        response['Content-Disposition'] = 'attachment; filename="{}_describe.xsd"'.format(layer)
+    elif layer is None:
+        response = HttpResponse('typeName parameter not provided')
+    else:
+        response = HttpResponse('layer name refered to by typeName parameter not found: {}'.format(layer))
+    return response
+
+
+@login_required
+def upload(request, layer):
+    # Handle file upload
+    if request.method == 'POST':
+        workspace, datastore = get_layer_info(layer)
+
+        if workspace and datastore:
+            filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
+            filename_absolute = safe_join(settings.MEDIA_ROOT, filename)
+            # if there is already and xsd file there, back it up first.
+            backup_millis = int(round(time.time() * 1000))
+            try:
+                os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
+            except OSError:
+                pass
+            default_storage.save(filename, request.FILES['file'])
+
+        response = HttpResponse('upload completed for layer: {}'.format(layer))
+    return response
 
 
 def get_layers():

@@ -1,36 +1,44 @@
-<form action="{% url "index" %}" method="GET">
-    {% csrf_token %}
-    <input type='hidden' id='subform' name="subform" value='describe' />
-    <select id='typeName' name='typeName'>
-    {% for layer in layers %}
-        <option value="{{ layer }}">{{ layer }}</option>
-    {% endfor %}
-    </select>
-    <input type='submit' value='Describe' />
-</form>
+<!DOCTYPE html>
+<html ng-app="gsschema">
+{% load staticfiles %}
 
-<form action="{% url "index" %}" method="GET">
-    {% csrf_token %}
-    <input type='hidden' id='subform' name="subform" value='download' />
-    <select id='typeName' name='typeName'>
-    {% for layer in layers %}
-        <option value="{{ layer }}">{{ layer }}</option>
-    {% endfor %}
-    </select>
-    <input type="submit" value="Download" />
-</form>
 
-<form action="{% url "index" %}" method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    <p>{{ file_upload_form.non_field_errors }}</p>
-    <p>select xsd to upload: </p>
-    <p>{{ file_upload_form.docfile.errors }} </p>
-    <p>    {{ file_upload_form.docfile }} </p>
-    <input type='hidden' id='subform' name="subform" value='upload' />
-    <select id='typeName' name='typeName'>
-    {% for layer in layers %}
-        <option value="{{ layer }}">{{ layer }}</option>
-    {% endfor %}
-    </select>
-    <input type="submit" value="Upload" />
-</form>
+<link rel="stylesheet" type="text/css" href="{% static 'gsschema/css/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'gsschema/lib/bootstrap/css/bootstrap.css' %}" />
+<script type="text/javascript" src="{% static 'gsschema/lib/jquery/js/jquery.js' %}"></script>
+<script type="text/javascript" src="{% static 'gsschema/lib/angular/js/angular.js' %}"></script>
+<script type="text/javascript" src="{% static 'gsschema/lib/angular-cookies/js/angular-cookies.js' %}"></script>
+<script type="text/javascript" src="{% static 'gsschema/lib/bootstrap/js/bootstrap.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'gsschema/js/script.js' %}"></script>
+
+<body>
+    {%verbatim%}
+    <div class="container" ng-controller="gsschema_ctrl">
+        <div class="page-header">
+          <h2 class="page-title">Edit Schema</h2>
+        </div>
+        <br/>
+
+        <fieldset>
+            <h4>Select Layer</h4>
+            <select id="default_style" name="default_style" required="required" ng-model="layerSelector">
+                <option ng-repeat="layer in layerList" value="{{layer}}">{{layer}}</option>
+            </select>
+            <button tooltip-append-to-body="true" tooltip-placement="top" tooltip="Refresh Layers" type="button" ng-click="reloadLayers()" class="btn btn-default btn-sm ng-scope">
+              <i class="glyphicon glyphicon-repeat"></i>
+            </button>
+            <br/>
+            <br/>
+            <a href="#" id="downalod-button" class="btn btn-sm btn-default" ng-click="download()">Download</a>
+            <a href="#" id="remove-button" class="btn btn-sm btn-danger" ng-click="remove()">Remove</a>
+            <a href="#" id="describe-feature-type-button" class="btn btn-sm btn-success" ng-click="describe()">Describe FeatureType</a>
+            <br/>
+            <br/>
+            <input type="file" file-model="myFile"/>
+            <button id="upload-button" class="btn btn-sm btn-default" ng-click="upload()">Upload</button>
+        </fieldset>
+    </div>
+    {%endverbatim%}
+</body>
+</html>

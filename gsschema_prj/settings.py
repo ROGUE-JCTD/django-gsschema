@@ -36,6 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'djangular',
     'gsschema',
 )
 
@@ -76,7 +77,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-SITEURL = 'http://192.168.99.99/'
+SITEURL = 'http://192.168.99.60/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
@@ -85,8 +86,8 @@ STATIC_URL = '/static/'
 # OGC (WMS/WFS/WCS) Server Settings
 OGC_SERVER = {
     'default': {
-        'LOCATION': 'http://192.168.99.99/geoserver/',
-        'PUBLIC_LOCATION': 'http://192.168.99.99/geoserver/',
+        'LOCATION': 'http://192.168.99.60/geoserver/',
+        'PUBLIC_LOCATION': 'http://192.168.99.60/geoserver/',
         'USER': 'admin',
         'PASSWORD': 'geoserver',
         'GEOSERVER_DATA_DIR': '/Users/s30244/dev/django-gsschema/geoserver_data',
