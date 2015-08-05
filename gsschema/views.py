@@ -8,19 +8,16 @@ import os
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.utils._os import safe_join
-from django.core.files.storage import default_storage
 from django.views.static import serve
 from django.http import HttpResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
 
 from gsschema.forms import DocumentForm
 
 @login_required
 def index(request):
-    # An empty, unbound form
-    file_upload_form = DocumentForm()
-
     # Render list page with the documents and the form
     return render_to_response(
         'gsschema/index.html',
@@ -35,7 +32,7 @@ def index(request):
 def download(request, layer):
     if layer:
         workspace, datastore = get_layer_info(layer)
-        filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(settings.MEDIA_ROOT, workspace, datastore, layer)
+        filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(get_gsschema_dir(), workspace, datastore, layer)
         filename = os.path.abspath(filename)
         if os.path.isfile(filename):
             response = serve(request, os.path.basename(filename), os.path.dirname(filename))
@@ -71,14 +68,18 @@ def upload(request, layer):
 
         if workspace and datastore:
             filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
-            filename_absolute = safe_join(settings.MEDIA_ROOT, filename)
+            filename_absolute = safe_join(get_gsschema_dir(), filename)
             # if there is already and xsd file there, back it up first.
             backup_millis = int(round(time.time() * 1000))
             try:
                 os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
             except OSError:
                 pass
-            default_storage.save(filename, request.FILES['file'])
+
+            file_storage = FileSystemStorage(location=get_gsschema_dir())
+            file_storage.file_permissions_mode = 0644
+            uploaded_file = request.FILES['file']
+            file_storage.save(filename, uploaded_file)
 
         response = HttpResponse('upload completed for layer: {}'.format(layer))
     return response
@@ -150,3 +151,13 @@ def get_connection(site_url):
     elif protocol.lower() == 'https:':
         conn = httplib.HTTPSConnection(urls_tokens[2])
     return conn
+
+"""
+example settings file
+GSSCHEMA_CONFIG = {
+    'gsschema_dir': '/var/lib/geoserver_data'
+}
+"""
+def get_gsschema_dir():
+    conf = getattr(settings, 'GSSCHEMA_CONFIG', {})
+    return conf.get('gsschema_dir', './')
