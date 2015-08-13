@@ -48,28 +48,33 @@ API Quick Guide
 Since schemas are already created (and each layer is using their own respective schema on MapLoom), GSSchema gives the user the ability to edit any available schema.
 To start, you can log onto GSSchema:
 
-*The user must be logged into GeoSHAPE.*
+*The user **_must_** be logged into GeoSHAPE.*
+
 **example: http://192.168.99.100/gsschema/**
 
-*/gsschema/*
+**/gsschema/**
 -------------
 You will be presented with a dropdown list, containing each layer that Geonode holds.
 One a layer is selected, a few action buttons will be presented. These buttons are listed in order of a normal use of GSSchema.
 
- - **Describe FeatureType**
+*Describe FeatureType*
+-------
 This button will allow you to download the schema that is currently being used for the selected layer. After downloading the schema, any text editor can be used to edit the schema and be uploaded with the next button. Editing tips will be covered in [this document][7].
 
- - **Upload**
+*Upload*
+-------
 Once a file is chosen for upload, this button will be enabled. This will upload the schema to Geoserver (while immediately reflecting on MapLoom) and make a local backup on the machine. This will then enable the **Download** and **Remove** buttons if it is successfully uploaded.
     - Expected results for upload:
         - Successful
         - Error Uploading: "Invalid file" (Non-XML format, not '.xsd')
         - Error Uploading: "Invalid schema"
 
- - **Download**
+*Download*
+------
 This button allows you to download a schema that you previously uploaded through /gsschema/. This schema is local to the machine, and if no schemas have been uploaded, this button will be disabled.
 
- - **Remove**
+*Remove*
+-------
 This will remove the currently selected layer's schema that is *local to the machine*. It will prompt the user with a window confirming if they want to remove the file. This button will be disabled if there is not a previous schema uploaded for that layer.
 
 
