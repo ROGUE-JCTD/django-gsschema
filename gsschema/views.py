@@ -38,11 +38,11 @@ def download(request, layer):
             response = serve(request, os.path.basename(filename), os.path.dirname(filename))
             response['Content-Disposition'] = 'attachment; filename="{}.xsd"'.format(layer)
             return response
-        response = HttpResponse('no schema file previously uploaded for layer: {}'.format(layer))
+        response = HttpResponse('Error - no schema file previously uploaded for layer: {}'.format(layer))
     elif layer is None:
-        response = HttpResponse('typeName parameter not provided')
+        response = HttpResponse('Error - layer parameter not provided')
     else:
-        response = HttpResponse('layer name refered to by typeName parameter not found: {}'.format(layer))
+        response = HttpResponse('Error - layer name referred to by typeName parameter not found: {}'.format(layer))
     return response
 
 
@@ -56,9 +56,28 @@ def describe(request, layer):
     elif layer is None:
         response = HttpResponse('typeName parameter not provided')
     else:
-        response = HttpResponse('layer name refered to by typeName parameter not found: {}'.format(layer))
+        response = HttpResponse('layer name referred to by typeName parameter not found: {}'.format(layer))
     return response
 
+@login_required
+def remove(request, layer):
+    if layer:
+        workspace, datastore = get_layer_info(layer)
+        filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(get_gsschema_dir(), workspace, datastore, layer)
+        filename = os.path.abspath(filename)
+        if os.path.exists(filename):
+            try:
+                os.remove(filename)
+                response = HttpResponse('Successful!')
+            except OSError as e:
+                print e.message
+                response = HttpResponse('Not successful!')
+                pass
+        else:
+            response = HttpResponse('File {}/schema.xsd does not exist'.format(layer))
+    else:
+        response = HttpResponse('Error - Layer returned null: {}'.format(layer))
+    return response
 
 @login_required
 def upload(request, layer):
@@ -69,16 +88,18 @@ def upload(request, layer):
         if workspace and datastore:
             filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
             filename_absolute = safe_join(get_gsschema_dir(), filename)
+            print filename_absolute
             # if there is already and xsd file there, back it up first.
             backup_millis = int(round(time.time() * 1000))
             try:
                 os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
-            except OSError:
+            except OSError as e:
+                print e.message
                 pass
 
             file_storage = FileSystemStorage(location=get_gsschema_dir())
             file_storage.file_permissions_mode = 0644
-            uploaded_file = request.FILES['file']
+            uploaded_file = request.FILES['file'] #This line breaks through permissions issues?
             file_storage.save(filename, uploaded_file)
 
         response = HttpResponse('upload completed for layer: {}'.format(layer))

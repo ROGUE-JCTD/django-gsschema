@@ -22,21 +22,33 @@
 
         <fieldset>
             <h4>Select Layer</h4>
-            <select id="default_style" name="default_style" required="required" ng-model="layerSelector">
-                <option ng-repeat="layer in layerList" value="{{layer}}">{{layer}}</option>
+            <select id="default_style" name="default_style" required="required" ng-model="layerSelector" ng-change="hasValidFile()"
+                    ng-options="layer as layer for layer in layerList">
+                <option value="">Select a Layer</option>
             </select>
-            <button tooltip-append-to-body="true" tooltip-placement="top" tooltip="Refresh Layers" type="button" ng-click="reloadLayers()" class="btn btn-default btn-sm ng-scope">
+            <button type="button" ng-click="reloadLayers()" class="btn btn-default btn-sm ng-scope"
+                    title="Refresh Layers" data-toggle="tooltip">
               <i class="glyphicon glyphicon-repeat"></i>
             </button>
-            <br/>
-            <br/>
-            <a href="#" id="downalod-button" class="btn btn-sm btn-default" ng-click="download()">Download</a>
-            <a href="#" id="remove-button" class="btn btn-sm btn-danger" ng-click="remove()">Remove</a>
-            <a href="#" id="describe-feature-type-button" class="btn btn-sm btn-success" ng-click="describe()">Describe FeatureType</a>
-            <br/>
-            <br/>
-            <input type="file" file-model="myFile"/>
-            <button id="upload-button" class="btn btn-sm btn-default" ng-click="upload()">Upload</button>
+            <div ng-if="showButtons()">
+                <br/>
+                <br/>
+                <button id="describe-feature-type-button" class="btn btn-sm btn-success" ng-click="describe()"
+                        title="Download the currently used schema for this layer" data-toggle="tooltip">Describe FeatureType</button>
+                <br/>
+                <br/>
+                <button id="download-button" class="btn btn-sm btn-default" ng-click="download()" ng-disabled="!hasValidSchema"
+                        title="Download the schema LOCAL to your machine (previously uploaded by you)" data-toggle="tooltip">Download</button>
+                <button id="remove-button" class="btn btn-sm btn-danger" ng-click="remove()" ng-disabled="!canRemoveFile"
+                        title="Remove the schema LOCAL to your machine" data-toggle="tooltip">Remove</button>
+                <br/>
+                <br/>
+                <br/>
+                <input id="file" name="file" type="file" file-model="myFile"/>
+                <br/>
+                <button id="upload-button" class="btn btn-sm btn-default" ng-click="upload()" ng-disabled="!hasUploadFile"
+                        title="Upload Schema" data-toggle="tooltip" data-placement="right">Upload</button>
+            </div>
         </fieldset>
     </div>
     {%endverbatim%}

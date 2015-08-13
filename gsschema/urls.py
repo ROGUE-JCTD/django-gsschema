@@ -6,4 +6,5 @@ urlpatterns = patterns('gsschema.views',
     url(r'(?P<layer>\w+)/download', 'download', name='download'),
     url(r'(?P<layer>\w+)/describe', 'describe', name='describe'),
     url(r'(?P<layer>\w+)/upload', 'upload', name='upload'),
+    url(r'(?P<layer>\w+)/remove', 'remove', name='remove'),
 )
