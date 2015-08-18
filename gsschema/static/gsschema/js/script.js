@@ -68,6 +68,8 @@ app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload
         fileUpload.uploadFileToUrl(file, uploadUrl, $cookies.get('csrftoken')).then(function(response) {
             $scope.hasValidSchema = true;
             $scope.canRemoveFile = true;
+            // remove the file since it succeeded
+            $('input[type="file"]').val('');
             console.log(response);
             window.alert('Upload Successful!');
         }, function(reject) {
