@@ -68,13 +68,12 @@ def remove(request, layer):
         if os.path.exists(filename):
             try:
                 os.remove(filename)
-                response = HttpResponse('Successful!')
+                response = HttpResponse('Successful removal of {}!'.format(layer))
             except OSError as e:
-                print e.message
-                response = HttpResponse('Not successful!')
+                response = HttpResponse('Error - {}'.format(e.message))
                 pass
         else:
-            response = HttpResponse('File {}/schema.xsd does not exist'.format(layer))
+            response = HttpResponse('Error - File {}/schema.xsd does not exist'.format(layer))
     else:
         response = HttpResponse('Error - Layer returned null: {}'.format(layer))
     return response
@@ -101,7 +100,7 @@ def upload(request, layer):
             file_storage.file_permissions_mode = 0644
             uploaded_file = request.FILES['file']
             try:
-                parsedFile = etree.parse(uploaded_file)
+                parsed_file = etree.parse(uploaded_file)
             except etree.XMLSyntaxError as error:
                 response = HttpResponse('Error - XML not valid: {}'.format(error.message))
             else:

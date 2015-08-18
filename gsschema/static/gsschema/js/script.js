@@ -6,7 +6,7 @@ if(!String.prototype.startsWith){
     }
 }
 
-app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload){
+app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload, fileRemove){
     $scope.name = 'salam';
     $scope.layerList = [];
     $scope.isLoading = false;
@@ -30,9 +30,7 @@ app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload
                         $scope.layerList.push($(this).children("Name").text());
                     }
 			    });
-			    //$(xhr.data).find('ServiceException').attr("ServiceException");
             } else {
-                // TODO: indicate that retrieving the layers has failed.
                 window.alert("There was a problem retrieving the layers from the server. Please make sure you're logged into GeoShape.")
             }
             $scope.isLoading = false;
@@ -80,10 +78,19 @@ app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload
 
     $scope.remove = function() {
         var confirm = window.confirm("Are you sure you want to remove the file?");
+
+        $scope.tt_isOpen = false; // Close tooltip
         if (confirm === true) {
             // OK
             var removeUrl = '/gsschema/' + $scope.layerSelector + '/remove/';
-            window.location = removeUrl;
+            fileRemove.removeFileWithUrl(removeUrl).then(function(response){
+                $scope.hasValidSchema = false;
+                $scope.canRemoveFile = false;
+                console.log(response);
+            }, function(reject) {
+                console.log(reject);
+                window.alert(reject);
+            });
         } else {
             // Cancel
         }
@@ -120,7 +127,11 @@ app.directive('fileModel', ['$parse', function ($parse) {
             element.bind('change', function(){
                 scope.$apply(function(){
                     modelSetter(scope, element[0].files[0]);
-                    scope.hasUploadFile = true;
+                    if (element[0].files.length > 0){
+                        scope.hasUploadFile = true;
+                    } else {
+                        scope.hasUploadFile = false;
+                    }
                 });
             });
         }
@@ -133,9 +144,6 @@ app.directive('toggle', function(){
     link: function(scope, element, attrs){
       if (attrs.toggle=="tooltip"){
         $(element).tooltip({container: 'body'});
-      } else if (attrs.toggle=="popover"){
-        // I don't think this works
-        $(element).popover();
       }
     }
   };
@@ -154,13 +162,32 @@ app.service('fileUpload', ['$http', '$q', function ($http, $q) {
             }
         }
         ).success(function(response){
-            if (response.startsWith('Error')){
-                deferredResponse.reject(response);
-            } else {
+            if (!response.startsWith('Error')){
                 deferredResponse.resolve(response);
+            } else {
+                deferredResponse.reject(response);
             }
         }).error(function(){
             deferredResponse.reject('There was problem uploading the file. Please check your network connectivity and try again.');
+        });
+        return deferredResponse.promise;
+    }
+}]);
+
+app.service('fileRemove', ['$http', '$q', function($http, $q) {
+    this.removeFileWithUrl = function(fileUrl){
+        var deferredResponse = $q.defer();
+        $http.get(fileUrl).then(function(response){
+            // URL returned successfully
+            if (!response.data.startsWith('Error')){
+                deferredResponse.resolve(response.data);
+            } else {
+                deferredResponse.reject(response.data);
+            }
+        }, function(response){
+            // Error occurs getting URL
+            console.log(response);
+            deferredResponse.reject('There was problem with the network. Please check your network connectivity and try again.')
         });
         return deferredResponse.promise;
     }
