@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
-
+from lxml import etree
 from gsschema.forms import DocumentForm
 
 @login_required
@@ -82,6 +82,7 @@ def remove(request, layer):
 @login_required
 def upload(request, layer):
     # Handle file upload
+    response = HttpResponse('Error - Upload request not POST')
     if request.method == 'POST':
         workspace, datastore = get_layer_info(layer)
 
@@ -93,16 +94,20 @@ def upload(request, layer):
             backup_millis = int(round(time.time() * 1000))
             try:
                 os.rename(filename_absolute, '{}_{}'.format(filename_absolute, backup_millis))
-            except OSError as e:
-                print e.message
+            except OSError:
                 pass
 
             file_storage = FileSystemStorage(location=get_gsschema_dir())
             file_storage.file_permissions_mode = 0644
-            uploaded_file = request.FILES['file'] #This line breaks through permissions issues?
-            file_storage.save(filename, uploaded_file)
+            uploaded_file = request.FILES['file']
+            try:
+                parsedFile = etree.parse(uploaded_file)
+            except etree.XMLSyntaxError as error:
+                response = HttpResponse('Error - XML not valid: {}'.format(error.message))
+            else:
+                file_storage.save(filename, uploaded_file)
+                response = HttpResponse('upload completed for layer: {}'.format(layer))
 
-        response = HttpResponse('upload completed for layer: {}'.format(layer))
     return response
 
 

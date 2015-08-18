@@ -64,49 +64,18 @@ app.controller('gsschema_ctrl', function($scope, $http, $q, $cookies, fileUpload
 
     $scope.upload = function() {
         var file = $scope.myFile;
-        console.log('file is ' );
         console.dir(file);
 
-        // Parse XML for errors
-
-        if (window.DOMParser){ // All browsers except IE before ver. 9
-            var Parser = new DOMParser();
-            try{
-                var xmlDoc = Parser.parseFromString(file, "text/xml");
-            } catch(e){
-                window.alert("Error creating XML: {}".format(e.message));
-            }
-        } else {
-            xmlDoc = CreateMSXMLDocumentObject();
-            if (!xmlDoc) {
-                window.alert("Cannot create XMLDocument object");
-            }
-            xmlDoc.loadXML(file);
-        }
-
-        var errorMsg = null;
-        if (xmlDoc.parseError && xmlDoc.parseError.errorCode != 0){
-            errorMsg = "XML Parsing Error: " + xmlDoc.parseError.reason
-                + " at line " + xmlDoc.parseError.line
-                + " at position " + xmlDoc.parseError.linepos;
-        } else {
-            if (xmlDoc.documentElement) {
-                if (xmlDoc.documentElement.firstChild.firstChild.nodeName == "parsererror") {
-                    errorMsg = xmlDoc.documentElement.childNodes[0].innerHTML;
-                }
-            } else {
-                errorMsg = "XML Parsing Error: unknown?";
-            }
-        }
-
-        if (errorMsg){
-            window.alert(errorMsg);
-        }
-
-        console.log(xmlFile);
-
-        var uploadUrl = "/fileUpload";
-        fileUpload.uploadFileToUrl(file, '/gsschema/' + $scope.layerSelector + '/upload', $cookies.get('csrftoken'));
+        var uploadUrl = '/gsschema/' + $scope.layerSelector + '/upload';
+        fileUpload.uploadFileToUrl(file, uploadUrl, $cookies.get('csrftoken')).then(function(response) {
+            $scope.hasValidSchema = true;
+            $scope.canRemoveFile = true;
+            console.log(response);
+            window.alert('Upload Successful!');
+        }, function(reject) {
+            console.log(reject);
+            window.alert(reject);
+        });
     };
 
     $scope.remove = function() {
@@ -172,11 +141,11 @@ app.directive('toggle', function(){
   };
 })
 
-app.service('fileUpload', ['$http', function ($http) {
+app.service('fileUpload', ['$http', '$q', function ($http, $q) {
     this.uploadFileToUrl = function(file, uploadUrl, csrfToken){
+        var deferredResponse = $q.defer();
         var formData = new FormData();
         formData.append('file', file);
-        console.log(file);
         $http.post(uploadUrl, formData, {
             transformRequest: angular.identity,
             headers: {
@@ -184,8 +153,15 @@ app.service('fileUpload', ['$http', function ($http) {
                 'X-CSRFToken': csrfToken
             }
         }
-        ).success(function(){
+        ).success(function(response){
+            if (response.startsWith('Error')){
+                deferredResponse.reject(response);
+            } else {
+                deferredResponse.resolve(response);
+            }
         }).error(function(){
+            deferredResponse.reject('There was problem uploading the file. Please check your network connectivity and try again.');
         });
-    };
+        return deferredResponse.promise;
+    }
 }]);

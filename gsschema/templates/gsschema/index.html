@@ -30,7 +30,7 @@
                     title="Refresh Layers" data-toggle="tooltip">
               <i class="glyphicon glyphicon-repeat"></i>
             </button>
-            <div ng-if="showButtons()">
+            <div ng-show="showButtons()">
                 <br/>
                 <br/>
                 <button id="describe-feature-type-button" class="btn btn-sm btn-success" ng-click="describe()"
@@ -44,7 +44,7 @@
                 <br/>
                 <br/>
                 <br/>
-                <input id="file" name="file" type="file" file-model="myFile"/>
+                <input type="file" file-model="myFile"/>
                 <br/>
                 <button id="upload-button" class="btn btn-sm btn-default" ng-click="upload()" ng-disabled="!hasUploadFile"
                         title="Upload Schema" data-toggle="tooltip" data-placement="right">Upload</button>
