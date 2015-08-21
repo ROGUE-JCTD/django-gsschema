@@ -5,7 +5,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
     name='django-gsschema',
-    version='0.1-beta1',
+    version='0.1-beta2',
     author='Syrus Mesdaghi',
     author_email='geoshape.org@gmail.com',
     url='https://github.com/ROGUE-JCTD/django-gsschema',

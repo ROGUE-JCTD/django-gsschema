@@ -14,16 +14,12 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from lxml import etree
-from gsschema.forms import DocumentForm
 
 @login_required
 def index(request):
     # Render list page with the documents and the form
     return render_to_response(
         'gsschema/index.html',
-        {
-            'layers': get_layers()
-        },
         context_instance=RequestContext(request)
     )
 
@@ -31,7 +27,7 @@ def index(request):
 @login_required
 def download(request, layer):
     if layer:
-        workspace, datastore = get_layer_info(layer)
+        workspace, datastore = get_layer_info(request, layer)
         filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(get_gsschema_dir(), workspace, datastore, layer)
         filename = os.path.abspath(filename)
         if os.path.isfile(filename):
@@ -50,7 +46,7 @@ def download(request, layer):
 def describe(request, layer):
     if layer:
         print '----[ describe'
-        res = describe_layer(layer)
+        res = describe_layer(request, layer)
         response = HttpResponse(res, content_type='application/xml')
         response['Content-Disposition'] = 'attachment; filename="{}_describe.xsd"'.format(layer)
     elif layer is None:
@@ -62,7 +58,7 @@ def describe(request, layer):
 @login_required
 def remove(request, layer):
     if layer:
-        workspace, datastore = get_layer_info(layer)
+        workspace, datastore = get_layer_info(request, layer)
         filename = '{}/workspaces/{}/{}/{}/schema.xsd'.format(get_gsschema_dir(), workspace, datastore, layer)
         filename = os.path.abspath(filename)
         if os.path.exists(filename):
@@ -83,7 +79,7 @@ def upload(request, layer):
     # Handle file upload
     response = HttpResponse('Error - Upload request not POST')
     if request.method == 'POST':
-        workspace, datastore = get_layer_info(layer)
+        workspace, datastore = get_layer_info(request, layer)
 
         if workspace and datastore:
             filename = 'workspaces/{}/{}/{}/schema.xsd'.format(workspace, datastore, layer)
@@ -100,7 +96,7 @@ def upload(request, layer):
             file_storage.file_permissions_mode = 0644
             uploaded_file = request.FILES['file']
             try:
-                parsed_file = etree.parse(uploaded_file)
+                etree.parse(uploaded_file)
             except etree.XMLSyntaxError as error:
                 response = HttpResponse('Error - XML not valid: {}'.format(error.message))
             else:
@@ -110,12 +106,12 @@ def upload(request, layer):
     return response
 
 
-def get_layers():
+def get_layers_as_admin(request):
     username = settings.OGC_SERVER['default']['USER']
     password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-    conn = get_connection(settings.SITEURL)
+    conn = get_connection(request)
     conn.request("GET", "/geoserver/rest/layers.json", None, headers)
     conn.set_debuglevel(1)
     r1 = conn.getresponse()
@@ -130,7 +126,7 @@ def get_layers():
     return layers
 
 
-def get_layer_info(layer):
+def get_layer_info(request, layer):
     workspace = None
     datastore = None
 
@@ -138,7 +134,7 @@ def get_layer_info(layer):
     password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-    conn = get_connection(settings.SITEURL)
+    conn = get_connection(request)
     conn.request("GET", "/geoserver/rest/layers/{}.json".format(layer), None, headers)
     r1 = conn.getresponse()
     print r1.status, r1.reason
@@ -155,26 +151,23 @@ def get_layer_info(layer):
     return workspace, datastore
 
 
-def describe_layer(layer):
+def describe_layer(request, layer):
     username = settings.OGC_SERVER['default']['USER']
     password = settings.OGC_SERVER['default']['PASSWORD']
     auth = base64.encodestring('{}:{}'.format(username, password)).replace('\n', '')
     headers = {"Authorization": "Basic {}".format(auth)}
-    conn = get_connection(settings.SITEURL)
+    conn = get_connection(request)
     conn.request("GET", "/geoserver/wfs?version=1.1.0&request=DescribeFeatureType&typeName={}".format(layer), None, headers)
-    r1 = conn.getresponse()
-    print r1.status, r1.reason
-    return r1.read()
+    return conn.getresponse().read()
 
 
-def get_connection(site_url):
-    urls_tokens = site_url.split('/')
-    protocol = urls_tokens[0]
-    conn = None
-    if protocol.lower() == 'http:':
-        conn = httplib.HTTPConnection(urls_tokens[2])
-    elif protocol.lower() == 'https:':
-        conn = httplib.HTTPSConnection(urls_tokens[2])
+def get_connection(request):
+    url_tokens = request.META['HTTP_REFERER'].split('/')
+    protocol = url_tokens[0]
+    if protocol.lower() == 'https:':
+        conn = httplib.HTTPSConnection(url_tokens[2])
+    else:
+        conn = httplib.HTTPConnection(url_tokens[2])
     return conn
 
 """
