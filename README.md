@@ -35,7 +35,16 @@ Notes
 </xsd:schema>
 ```
 
-- The main lines that are going to be edited are the 'xsd:element' sections.
+- The main lines that are going to be edited are the 'xsd:element' sections. Two changes are made to that line: first, the ```type="xsd:string"/>``` is replaced with just ```>``` then the choices are added and the emelemt tag is closed 
+```            
+    <xsd:simpleType>
+      <xsd:restriction base="xsd:string">
+        <xsd:enumeration value="open"/>
+        <xsd:enumeration value="closed"/>
+      </xsd:restriction>
+    </xsd:simpleType>
+  </xsd:element>
+```  
 - The attribute 'type' inside the 'xsd:element' has many options, such as the following:
     - 'xsd:date'
     - 'xsd:dateTime'
