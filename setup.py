@@ -27,6 +27,6 @@ setup(
         'Programming Language :: Python :: 2.7'
     ],
     install_requires=[
-        'Django==1.6.10',
+        'Django==2.2.24',
     ]
 )
